@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Beautiful Text Editor</title>
+  <style>
+    :root {
+      --primary-color: #00ffff;
+      --background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+    }
+
+    body {
+      margin: 0;
+      height: 100vh;
+      background: var(--background);
+      background-size: 400% 400%;
+      animation: gradientShift 20s ease infinite;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      overflow: hidden;
+      font-family: 'Courier New', Courier, monospace;
+    }
+
+    @keyframes gradientShift {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+
+    .editor-container {
+      position: relative;
+      width: 80vw;
+      height: 80vh;
+      background: rgba(255, 255, 255, 0.07);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 20px;
+      box-shadow: 0 0 50px var(--primary-color);
+      backdrop-filter: blur(12px);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      transition: box-shadow 0.5s ease-in-out;
+      animation: pulseShadow 3s ease-in-out infinite, popIn 1.2s ease;
+    }
+
+    @keyframes pulseShadow {
+      0%, 100% { box-shadow: 0 0 30px var(--primary-color); }
+      50% { box-shadow: 0 0 60px var(--primary-color); }
+    }
+
+    @keyframes popIn {
+      0% { transform: scale(0.9); opacity: 0; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+
+    #editor {
+      flex: 1;
+      width: 100%;
+      padding: 20px;
+      background: transparent;
+      border: none;
+      color: var(--primary-color);
+      font-size: 1.3rem;
+      outline: none;
+      caret-color: #ffffff;
+      text-shadow: 0 0 6px var(--primary-color), 0 0 12px var(--primary-color);
+      z-index: 1;
+      position: relative;
+      resize: none;
+      animation: fadeIn 1s ease forwards, shimmer 6s ease-in-out infinite;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes shimmer {
+      0% { text-shadow: 0 0 6px var(--primary-color), 0 0 12px var(--primary-color); }
+      50% { text-shadow: 0 0 10px var(--primary-color), 0 0 20px var(--primary-color); }
+      100% { text-shadow: 0 0 6px var(--primary-color), 0 0 12px var(--primary-color); }
+    }
+
+    .particle {
+      position: absolute;
+      width: 6px;
+      height: 6px;
+      background: var(--primary-color);
+      border-radius: 50%;
+      opacity: 0.7;
+      animation: fly 1s ease-out forwards;
+      pointer-events: none;
+      mix-blend-mode: screen;
+    }
+
+    @keyframes fly {
+      0% {
+        transform: translateY(0) scale(1);
+        opacity: 1;
+      }
+      100% {
+        transform: translateY(-150px) scale(0.3) rotate(360deg);
+        opacity: 0;
+      }
+    }
+
+    .controls {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 16px;
+      background: rgba(0, 0, 0, 0.25);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      animation: fadeIn 1.5s ease forwards;
+    }
+
+    .controls button, .controls select {
+      background: var(--primary-color);
+      color: #000;
+      border: none;
+      padding: 8px 14px;
+      border-radius: 8px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: all 0.3s ease, transform 0.2s ease;
+      box-shadow: 0 0 10px var(--primary-color);
+      animation: pulse 2s infinite ease-in-out;
+    }
+
+    .controls button:hover, .controls select:hover {
+      background: #00cccc;
+      transform: scale(1.1) rotate(-1deg);
+      box-shadow: 0 0 20px var(--primary-color);
+    }
+
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.05); }
+    }
+  </style>
+</head>
+<body>
+  <div class="editor-container">
+    <div class="controls">
+      <div>
+        <button onclick="saveText()">💾 Save</button>
+        <button onclick="loadText()">📂 Load</button>
+        <button onclick="exportText()">📤 Export</button>
+        <input type="file" id="fileInput" accept=".txt" style="display:none" onchange="importText(event)" />
+        <button onclick="document.getElementById('fileInput').click()">📥 Import</button>
+      </div>
+      <select onchange="changeTheme(this.value)">
+        <option value="blue">Blue</option>
+        <option value="red">Red</option>
+        <option value="pink">Pink</option>
+        <option value="purple">Purple</option>
+        <option value="green">Green</option>
+      </select>
+    </div>
+    <textarea id="editor" spellcheck="false" autofocus></textarea>
+  </div>
+
+  <script>
+    const editor = document.getElementById('editor');
+
+    editor.addEventListener('input', () => {
+      const cursorPos = editor.selectionStart;
+      const span = document.createElement('span');
+      span.style.visibility = 'hidden';
+      span.style.position = 'absolute';
+      span.style.whiteSpace = 'pre';
+      span.style.font = window.getComputedStyle(editor).font;
+      span.textContent = editor.value.substring(0, cursorPos);
+
+      document.body.appendChild(span);
+      const rect = span.getBoundingClientRect();
+      const editorRect = editor.getBoundingClientRect();
+      const x = editorRect.left + rect.width + 20;
+      const y = editorRect.top + (cursorPos / 80 | 0) * 20 + 20;
+      document.body.removeChild(span);
+
+      for (let i = 0; i < 5; i++) {
+        const particle = document.createElement('div');
+        particle.className = 'particle';
+        particle.style.left = `${x + Math.random() * 10 - 5}px`;
+        particle.style.top = `${y + Math.random() * 10 - 5}px`;
+        particle.style.backgroundColor = `hsl(${Math.random() * 360}, 100%, 70%)`;
+        document.body.appendChild(particle);
+        setTimeout(() => particle.remove(), 1000);
+      }
+    });
+
+    function saveText() {
+      localStorage.setItem('beautifulText', editor.value);
+      alert('Text saved!');
+    }
+
+    function loadText() {
+      const text = localStorage.getItem('beautifulText');
+      if (text !== null) editor.value = text;
+    }
+
+    function exportText() {
+      const blob = new Blob([editor.value], { type: 'text/plain' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'beautiful-text.txt';
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    function importText(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        editor.value = e.target.result;
+      };
+      reader.readAsText(file);
+    }
+
+    function changeTheme(theme) {
+      const root = document.documentElement;
+      switch (theme) {
+        case 'red':
+          root.style.setProperty('--primary-color', '#cc0000');
+          root.style.setProperty('--background', 'linear-gradient(135deg, #200000, #440000, #880000)');
+          break;
+        case 'pink':
+          root.style.setProperty('--primary-color', '#cc3399');
+          root.style.setProperty('--background', 'linear-gradient(135deg, #1e0033, #660033, #cc3399)');
+          break;
+        case 'blue':
+          root.style.setProperty('--primary-color', '#00ffff');
+          root.style.setProperty('--background', 'linear-gradient(135deg, #0f0c29, #302b63, #24243e)');
+          break;
+        case 'purple':
+          root.style.setProperty('--primary-color', '#9933ff');
+          root.style.setProperty('--background', 'linear-gradient(135deg, #1a0033, #330066, #9933ff)');
+          break;
+        case 'green':
+          root.style.setProperty('--primary-color', '#33ff99');
+          root.style.setProperty('--background', 'linear-gradient(135deg, #003322, #006644, #33ff99)');
+          break;
+      }
+    }
+  </script>
+</body>
+</html>
