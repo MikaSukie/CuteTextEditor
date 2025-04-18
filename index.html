@@ -166,7 +166,7 @@
   <script>
     const editor = document.getElementById('editor');
   
-    // Create a hidden mirror element
+    
     const mirror = document.createElement('div');
     mirror.style.position = 'absolute';
     mirror.style.visibility = 'hidden';
@@ -185,28 +185,35 @@
     function getCaretCoordinates(textarea) {
       const value = textarea.value;
       const selectionStart = textarea.selectionStart;
-  
-      // Set mirror content up to caret
+
+      const computed = window.getComputedStyle(textarea);
+      mirror.style.font = computed.font;
+      mirror.style.lineHeight = computed.lineHeight;
+      mirror.style.padding = computed.padding;
+      mirror.style.border = computed.border;
+      mirror.style.width = textarea.clientWidth + 'px';
+      mirror.style.height = textarea.clientHeight + 'px';
+      mirror.scrollTop = textarea.scrollTop;
+
       mirror.textContent = value.substring(0, selectionStart);
-  
-      // Add a special marker at caret position
+
       const marker = document.createElement('span');
       marker.textContent = '|';
       mirror.appendChild(marker);
-  
+
       const mirrorRect = mirror.getBoundingClientRect();
       const markerRect = marker.getBoundingClientRect();
       const textareaRect = textarea.getBoundingClientRect();
-  
+
       return {
-        x: markerRect.left - mirrorRect.left + textareaRect.left,
-        y: markerRect.top - mirrorRect.top + textareaRect.top
+        x: markerRect.left - mirrorRect.left + textareaRect.left - textarea.scrollLeft,
+        y: markerRect.top - mirrorRect.top + textareaRect.top - textarea.scrollTop
       };
     }
-  
+
     editor.addEventListener('input', () => {
       const coords = getCaretCoordinates(editor);
-  
+
       for (let i = 0; i < 6; i++) {
         const particle = document.createElement('div');
         particle.className = 'particle';
@@ -217,8 +224,13 @@
         setTimeout(() => particle.remove(), 1000);
       }
     });
+
+    editor.addEventListener('keyup', (e) => {
+      if (e.key === 'Enter' || e.key === 'Backspace' || e.key === 'Delete') {
+        editor.dispatchEvent(new Event('input'));
+      }
+    });
   
-    // Export, Import, Theme logic remains unchanged
     function exportText() {
       const blob = new Blob([editor.value], { type: 'text/plain' });
       const url = URL.createObjectURL(blob);
