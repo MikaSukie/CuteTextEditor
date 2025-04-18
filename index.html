@@ -145,8 +145,6 @@
   <div class="editor-container">
     <div class="controls">
       <div>
-        <button onclick="saveText()">💾 Save</button>
-        <button onclick="loadText()">📂 Load</button>
         <button onclick="exportText()">📤 Export</button>
         <input type="file" id="fileInput" accept=".txt" style="display:none" onchange="importText(event)" />
         <button onclick="document.getElementById('fileInput').click()">📥 Import</button>
@@ -191,16 +189,6 @@
         setTimeout(() => particle.remove(), 1000);
       }
     });
-
-    function saveText() {
-      localStorage.setItem('beautifulText', editor.value);
-      alert('Text saved!');
-    }
-
-    function loadText() {
-      const text = localStorage.getItem('beautifulText');
-      if (text !== null) editor.value = text;
-    }
 
     function exportText() {
       const blob = new Blob([editor.value], { type: 'text/plain' });
