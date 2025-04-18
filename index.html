@@ -165,34 +165,60 @@
 
   <script>
     const editor = document.getElementById('editor');
-
+  
+    // Create a hidden mirror element
+    const mirror = document.createElement('div');
+    mirror.style.position = 'absolute';
+    mirror.style.visibility = 'hidden';
+    mirror.style.whiteSpace = 'pre-wrap';
+    mirror.style.wordWrap = 'break-word';
+    mirror.style.zIndex = '-999';
+    mirror.style.pointerEvents = 'none';
+    mirror.style.font = window.getComputedStyle(editor).font;
+    mirror.style.lineHeight = window.getComputedStyle(editor).lineHeight;
+    mirror.style.padding = window.getComputedStyle(editor).padding;
+    mirror.style.border = window.getComputedStyle(editor).border;
+    mirror.style.width = editor.offsetWidth + 'px';
+    mirror.style.height = editor.offsetHeight + 'px';
+    document.body.appendChild(mirror);
+  
+    function getCaretCoordinates(textarea) {
+      const value = textarea.value;
+      const selectionStart = textarea.selectionStart;
+  
+      // Set mirror content up to caret
+      mirror.textContent = value.substring(0, selectionStart);
+  
+      // Add a special marker at caret position
+      const marker = document.createElement('span');
+      marker.textContent = '|';
+      mirror.appendChild(marker);
+  
+      const mirrorRect = mirror.getBoundingClientRect();
+      const markerRect = marker.getBoundingClientRect();
+      const textareaRect = textarea.getBoundingClientRect();
+  
+      return {
+        x: markerRect.left - mirrorRect.left + textareaRect.left,
+        y: markerRect.top - mirrorRect.top + textareaRect.top
+      };
+    }
+  
     editor.addEventListener('input', () => {
-      const cursorPos = editor.selectionStart;
-      const span = document.createElement('span');
-      span.style.visibility = 'hidden';
-      span.style.position = 'absolute';
-      span.style.whiteSpace = 'pre';
-      span.style.font = window.getComputedStyle(editor).font;
-      span.textContent = editor.value.substring(0, cursorPos);
-
-      document.body.appendChild(span);
-      const rect = span.getBoundingClientRect();
-      const editorRect = editor.getBoundingClientRect();
-      const x = editorRect.left + rect.width + 20;
-      const y = editorRect.top + (cursorPos / 80 | 0) * 20 + 20;
-      document.body.removeChild(span);
-
-      for (let i = 0; i < 5; i++) {
+      const coords = getCaretCoordinates(editor);
+  
+      for (let i = 0; i < 6; i++) {
         const particle = document.createElement('div');
         particle.className = 'particle';
-        particle.style.left = `${x + Math.random() * 10 - 5}px`;
-        particle.style.top = `${y + Math.random() * 10 - 5}px`;
+        particle.style.left = `${coords.x + Math.random() * 8 - 4}px`;
+        particle.style.top = `${coords.y + Math.random() * 8 - 4}px`;
         particle.style.backgroundColor = `hsl(${Math.random() * 360}, 100%, 70%)`;
         document.body.appendChild(particle);
         setTimeout(() => particle.remove(), 1000);
       }
     });
-
+  
+    // Export, Import, Theme logic remains unchanged
     function exportText() {
       const blob = new Blob([editor.value], { type: 'text/plain' });
       const url = URL.createObjectURL(blob);
@@ -202,7 +228,7 @@
       a.click();
       URL.revokeObjectURL(url);
     }
-
+  
     function importText(event) {
       const file = event.target.files[0];
       if (!file) return;
@@ -212,7 +238,7 @@
       };
       reader.readAsText(file);
     }
-
+  
     function changeTheme(theme) {
       const root = document.documentElement;
       switch (theme) {
@@ -239,5 +265,6 @@
       }
     }
   </script>
+  
 </body>
 </html>
